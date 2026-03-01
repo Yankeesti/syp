@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(poetry run pytest:*)",
+      "Bash(poetry add:*)",
+      "Bash(poetry run pre-commit:*)",
+      "Bash(poetry run alembic revision:*)",
+      "Bash(poetry run alembic:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(cd:*)",
+      "Bash(cd /Users/timheinsberg/Desktop/Studium/9.\\\\ Semester/SYP/code_repo/team05/services/backend && poetry run poe format:*)",
+      "Bash(poetry run poe format:*)",
+      "Bash(cd /Users/timheinsberg/Desktop/Studium/9.\\\\ Semester/SYP/code_repo/team05/services/backend && python:*)",
+      "Bash(timeout 10 poetry run uvicorn:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

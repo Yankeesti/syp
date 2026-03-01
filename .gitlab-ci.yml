@@ -1,0 +1,111 @@
+# GitLab CI/CD Pipeline für Backend Service
+# Mono-repo: Triggert nur bei Backend-Änderungen
+
+variables:
+  POETRY_VERSION: "2.1.2"
+  POETRY_HOME: "/opt/poetry"
+  POETRY_NO_INTERACTION: "1"
+  POETRY_VIRTUALENVS_IN_PROJECT: "true"
+  POETRY_VIRTUALENVS_CREATE: "true"
+  POETRY_CACHE_DIR: "/opt/cache/pypoetry"
+  PYTHONUNBUFFERED: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PIP_NO_CACHE_DIR: "1"
+
+default:
+  image: python:3.13-slim
+
+stages:
+  - validate
+  - test
+
+.backend-changes: &backend-changes
+  rules:
+    - changes:
+        - services/backend/**/*
+        - .gitlab-ci.yml
+
+.frontend-changes: &frontend-changes
+  rules:
+    - changes:
+        - services/frontend/**/*
+        - .gitlab-ci.yml
+
+.install-poetry: &install-poetry
+  before_script:
+    - apt-get update && apt-get install -y curl
+    - curl -sSL https://install.python-poetry.org | python3 -
+    - export PATH="$POETRY_HOME/bin:$PATH"
+    - poetry --version
+    - cd services/backend
+    - poetry config virtualenvs.in-project true
+    - poetry install --no-root --with dev
+
+format-check:
+  stage: validate
+  <<: *backend-changes
+  <<: *install-poetry
+  cache:
+    key:
+      files:
+        - services/backend/poetry.lock
+    paths:
+      - services/backend/.venv
+      - $POETRY_CACHE_DIR
+    policy: pull-push
+  script:
+    - echo "Checking code formatting with Black..."
+    - poetry run black --check app/ tests/
+  allow_failure: false
+
+unit-tests:
+  stage: test
+  <<: *backend-changes
+  <<: *install-poetry
+  variables:
+    DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+    JWT_SECRET_KEY: "test-secret-key-for-ci-only-not-for-production"
+  cache:
+    key:
+      files:
+        - services/backend/poetry.lock
+    paths:
+      - services/backend/.venv
+      - $POETRY_CACHE_DIR
+    policy: pull
+  script:
+    - echo "Running pytest with coverage..."
+    - poetry run pytest --cov=app --cov-report=term-missing --cov-report=html --cov-report=xml -v
+  coverage: '/TOTAL.*\s+(\d+%)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: services/backend/coverage.xml
+    paths:
+      - services/backend/htmlcov/
+      - services/backend/coverage.xml
+    expose_as: 'Coverage Report'
+    when: always
+    expire_in: 30 days
+  allow_failure: false
+
+frontend-tests:
+  stage: test
+  image: node:20
+  <<: *frontend-changes
+  variables:
+    NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  cache:
+    key:
+      files:
+        - services/frontend/package-lock.json
+    paths:
+      - .npm
+    policy: pull-push
+  before_script:
+    - cd services/frontend
+  script:
+    - npm ci
+    - npm run test:run
+  allow_failure: false

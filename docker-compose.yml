@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: quiz_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-quizdb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./services/backend
+      dockerfile: Dockerfile
+    container_name: quiz_backend
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-quizdb}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3000}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-5}
+      MAGIC_LINK_EXPIRATION_MINUTES: ${MAGIC_LINK_EXPIRATION_MINUTES:-5}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      LLM_PROVIDER: ${LLM_PROVIDER}
+      LLM_API_URL: ${LLM_API_URL}
+      LLM_AUTH_USER: ${LLM_AUTH_USER:-}
+      LLM_AUTH_PASSWORD: ${LLM_AUTH_PASSWORD:-}
+      LLM_OLLAMA_GENERATION_MODEL: ${LLM_OLLAMA_GENERATION_MODEL}
+      LLM_OLLAMA_UTILITY_MODEL: ${LLM_OLLAMA_UTILITY_MODEL}
+      LLM_LITELLM_GENERATION_MODEL: ${LLM_LITELLM_GENERATION_MODEL}
+      LLM_LITELLM_UTILITY_MODEL: ${LLM_LITELLM_UTILITY_MODEL}
+      LLM_OPENAI_API_KEY: ${LLM_OPENAI_API_KEY:-}
+      LLM_ANTHROPIC_API_KEY: ${LLM_ANTHROPIC_API_KEY:-}
+      LLM_GOOGLE_API_KEY: ${LLM_GOOGLE_API_KEY:-}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-180.0}
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile
+    container_name: quiz_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000" # Standard für Vite, bei React oft 3000
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000}
+
+volumes:
+  postgres_data:

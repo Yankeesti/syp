@@ -1,0 +1,96 @@
+import { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { requestMagicLink } from '../model/authApi';
+import { setUserEmail } from '../model/tokenStorage';
+
+interface LoginScreenProps {
+  onBack: () => void;
+}
+
+export function LoginScreen({ onBack }: LoginScreenProps) {
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const response = await requestMagicLink(email);
+      setUserEmail(email);
+      setSuccessMessage(response.message || 'Magic-Link gesendet. Bitte pruefe dein Postfach.');
+    } catch (error) {
+      const fallback = 'Senden des Magic-Links fehlgeschlagen.';
+      setErrorMessage(error instanceof Error ? error.message : fallback);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <header className="dark-header py-2 px-6">
+        <h1 className="text-center text-lg">KI Tutor</h1>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col px-4 py-2">
+        <button
+          onClick={onBack}
+          className="ki-link flex items-center gap-1 mb-2 self-start text-sm"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Züruck</span>
+        </button>
+
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-96">
+            <div className="ki-card p-4">
+              <div className="text-center mb-3">
+                <h2 className="ki-title mb-2 text-lg">Log in</h2>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-2">
+                <div>
+                  <label className="ki-title block mb-1 text-sm">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="ki-input w-full py-2 px-3 text-sm"
+                    placeholder="ihre-email@beispiel.de"
+                    required
+                  />
+                </div>
+
+                {errorMessage && (
+                  <div className="text-sm text-red-600">{errorMessage}</div>
+                )}
+                {successMessage && (
+                  <div className="text-sm text-green-600">{successMessage}</div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="ki-button-primary w-full py-2 text-sm mt-2"
+                >
+                  {isSubmitting ? 'Sende...' : 'Link senden'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

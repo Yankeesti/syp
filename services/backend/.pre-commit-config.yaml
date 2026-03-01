@@ -1,0 +1,24 @@
+repos:
+  - repo: https://github.com/asottile/add-trailing-comma
+    rev: v4.0.0
+    hooks:
+      - id: add-trailing-comma
+        files: ^services/backend/(app/|tests/).*\.py$
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        files: ^services/backend/(app/|tests/).*\.py$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        files: ^services/backend/(app/|tests/)
+      - id: end-of-file-fixer
+        files: ^services/backend/(app/|tests/)
+      - id: check-yaml
+        files: ^services/backend/(app/|tests/)
+      - id: check-added-large-files
+        files: ^services/backend/(app/|tests/)
